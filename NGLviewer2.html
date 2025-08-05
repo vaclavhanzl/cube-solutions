@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <script src="https://unpkg.com/ngl@latest/dist/ngl.js"></script>
+</head>
+<body>
+  <div id="viewport" style="width: 800px; height: 600px;"></div>
+<script>
+  var stage = new NGL.Stage("viewport");
+
+  // Load protein (optional)
+  stage.loadFile("your.pdb").then(function (p) {
+    p.addRepresentation("cartoon", { color: "skyblue" });
+    p.autoView();
+  });
+
+  // Load mesh
+  stage.loadFile("your.obj", { ext: "obj" }).then(function (meshComponent) {
+    var repr = meshComponent.addRepresentation("surface", {
+      color: "red",
+      opacity: 0.5,
+      side: "double"
+    });
+
+    meshComponent.autoView();
+
+    // Handle mouse click events
+    stage.signals.clicked.add(function (pickingProxy) {
+      if (!pickingProxy || !pickingProxy.component) return;
+
+      if (pickingProxy.component === meshComponent) {
+        // Toggle opacity on click
+        const current = repr.parameters.opacity;
+        const newOpacity = current === 0.5 ? 1.0 : 0.2;
+        repr.setParameters({ opacity: newOpacity });
+      }
+    });
+  });
+</script>
+</body>
+</html>
