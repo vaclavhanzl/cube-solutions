@@ -9,14 +9,14 @@
 <script>
   var stage = new NGL.Stage("viewport");
 
-  // Load protein (optional)
-  stage.loadFile("your.pdb").then(function (p) {
-    p.addRepresentation("cartoon", { color: "skyblue" });
-    p.autoView();
-  });
+//  // Load protein (optional)
+//  stage.loadFile("your.pdb").then(function (p) {
+//    p.addRepresentation("cartoon", { color: "skyblue" });
+//    p.autoView();
+//  });
 
   // Load mesh
-  stage.loadFile("your.obj", { ext: "obj" }).then(function (meshComponent) {
+  stage.loadFile("brick.obj", { ext: "obj" }).then(function (meshComponent) {
     var repr = meshComponent.addRepresentation("surface", {
       color: "red",
       opacity: 0.5,
