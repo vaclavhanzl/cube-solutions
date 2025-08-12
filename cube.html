@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Brick Viewer (Final Tuning)</title>
+  <title>Brick Viewer (Bigger via FOV)</title>
   <style>
     html, body {
       margin: 0;
@@ -10,9 +10,7 @@
       height: 100%;
       background: white;
     }
-    canvas {
-      display: block;
-    }
+    canvas { display: block; }
   </style>
 </head>
 <body>
@@ -21,32 +19,43 @@
   import { TrackballControls } from 'https://esm.sh/three@0.155.0/examples/jsm/controls/TrackballControls.js';
   import { OBJLoader } from 'https://esm.sh/three@0.155.0/examples/jsm/loaders/OBJLoader.js';
 
+  // Scene & camera
   const scene = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
-  camera.position.set(8, 5, 10);  // ✅ Better 3D angle
+  const camera = new THREE.PerspectiveCamera(42, window.innerWidth / window.innerHeight, 0.1, 1000); // 60 -> 42
+  camera.position.set(8, 5, 10); // keep distance to preserve perspective
+  camera.updateProjectionMatrix();
 
   const renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.setClearColor('white');
+  // Optional: sharper on HiDPI
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
   document.body.appendChild(renderer.domElement);
 
+  // Controls (PyMOL-like)
   const controls = new TrackballControls(camera, renderer.domElement);
-  controls.target.set(2, 2, 2);  // ✅ Rotate around this point
-  controls.rotateSpeed = 5.0;    // ✅ 5x more sensitive rotation
+  controls.target.set(2, 2, 2);
+  controls.rotateSpeed = 5.0;
   controls.zoomSpeed = 1.2;
   controls.panSpeed = 0.8;
   controls.update();
 
+  // Lights
   scene.add(new THREE.AmbientLight(0xffffff, 0.6));
-  const light = new THREE.DirectionalLight(0xffffff, 0.6);
-  light.position.set(5, 10, 7.5);
-  scene.add(light);
+  const dirLight = new THREE.DirectionalLight(0xffffff, 2);
+  scene.add(dirLight);
+  const lightTarget = new THREE.Object3D();
+  lightTarget.position.copy(controls.target);
+  scene.add(lightTarget);
+  dirLight.target = lightTarget;
 
+  // Colors
   const colors = [
     'red', 'green', 'orange', 'gray', 'blue', 'bisque', 'azure', 'coral',
     'aquamarine', 'cadetblue', 'cyan', 'khaki', 'magenta', 'lightgray', 'blue', 'red'
   ];
 
+  // Load bricks
   const loader = new OBJLoader();
   const raycaster = new THREE.Raycaster();
   const mouse = new THREE.Vector2();
@@ -63,7 +72,6 @@
 
     loader.load(path, (obj) => {
       const color = colors[index % colors.length];
-
       obj.traverse(child => {
         if (child.isMesh) {
           child.material = new THREE.MeshPhongMaterial({
@@ -83,6 +91,7 @@
     });
   });
 
+  // Mousedown transparency toggle
   window.addEventListener('mousedown', event => {
     const rect = renderer.domElement.getBoundingClientRect();
     mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
@@ -106,13 +115,25 @@
     }
   });
 
+  // Animate
+  const camOffset = new THREE.Vector3(-10, 10, 0); // left-top relative to camera
   function animate() {
     requestAnimationFrame(animate);
     controls.update();
+
+    // Light follows camera from left-top
+    const worldPos = camOffset.clone();
+    camera.localToWorld(worldPos);
+    dirLight.position.copy(worldPos);
+
+    lightTarget.position.copy(controls.target);
+    dirLight.target.updateMatrixWorld();
+
     renderer.render(scene, camera);
   }
   animate();
 
+  // Resize
   window.addEventListener("resize", () => {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
